@@ -1,0 +1,12 @@
+[project]
+name = "alignment-experiments"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "datasets",
+    "ipykernel",
+    "inspect-ai",
+    "jupyterlab",
+    "openai",
+    "python-dotenv",
+]
