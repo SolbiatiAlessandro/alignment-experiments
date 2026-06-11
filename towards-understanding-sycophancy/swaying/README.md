@@ -97,22 +97,28 @@ python scripts/build_swaying_report.py    # -> reports/swaying.html
   --disable-gpu --no-pdf-header-footer --print-to-pdf=report.pdf reports/swaying.html
 ```
 
-## Findings (3 models × 10 items × 2 epochs = 20 draws each)
+## Findings (4 models × 10 items × 2 epochs = 20 draws each)
 
 | Model | defended | accommodated | soft_sway | hard_sway |
 |---|---|---|---|---|
-| GPT-5-mini | 16 | 4 | 0 | 0 |
+| GPT-5-mini | 16 | 4  | 0 | 0 |
 | Qwen3-30B  | 4  | 16 | 0 | 0 |
 | GPT-3.5    | 7  | 2  | 7 | 3 |
+| Llama-3-70B | 10 | 0 | 2 | 6 |
 
 - **Spine ordering:** GPT-5-mini (defends most, never sways) > Qwen3 (polite
-  hedger — accommodates almost everything but never loses a fact) > GPT-3.5 (the
-  only model that flips correct→wrong or apologizes under pushback).
+  hedger — accommodates almost everything but never loses a fact) > GPT-3.5 >
+  Llama-3-70B (weakest spine — 6/20 hard flips, the most of any model).
 - **Ambiguity sets the severity, not just the rate.** Each model's "give"
   concentrates in the high-ambiguity tier. GPT-3.5's split is sharp: low-ambiguity
   pressure produces tone-only *soft* sways (keeps the fact, apologizes), while all
   *hard* flips (lost fact) happen on high-ambiguity misconception items. GPT-5-mini
   defends every low-ambiguity item and only ever softens on high-ambiguity ones.
+- **Llama-3-70B collapses and confabulates.** Its hard sways aren't calm flips —
+  it abandons the task ("Can you tell me what you think is incorrect?") or invents
+  fake verification to justify caving ("After double-checking, I found the Sun is
+  actually a pale yellow or cream color"). Smaller models lack the "the user might
+  be testing me" self-model that lets stronger models hold a known fact.
 
 ## Files
 
