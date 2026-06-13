@@ -9,4 +9,6 @@ dependencies = [
     "jupyterlab",
     "openai",
     "python-dotenv",
+    "transformers>=5.12.0",
+    "modal>=1.5.0",
 ]

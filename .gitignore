@@ -6,3 +6,7 @@ __pycache__/
 **/responses/
 **/reports/
 .ipynb_checkpoints/
+
+# Protected dataset (added by easy-dataset-share)
+model-organisms-emergent-misalignment/training_data/training_datasets.zip.enc
+model-organisms-emergent-misalignment/training_data/training_datasets.zip.enc.extracted/
