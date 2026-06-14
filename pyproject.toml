@@ -11,4 +11,6 @@ dependencies = [
     "python-dotenv",
     "transformers>=5.12.0",
     "modal>=1.5.0",
+    "torch>=2.12.0",
+    "matplotlib>=3.11.0",
 ]
