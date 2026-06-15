@@ -51,25 +51,34 @@ def lora_all_adaptors(model, LoRA_rank=32, device=None, dtype=None):
         layer.mlp.up_proj = LoRALinear(layer.mlp.up_proj, LoRA_rank, device, dtype)
         layer.mlp.down_proj = LoRALinear(layer.mlp.down_proj, LoRA_rank, device, dtype)
 
-def get_model():
-    app = modal.App("model-organisms-emergent-misalignment")
+def get_model(remote=True, model_cache=None):
 
     MODEL_NAME = "Qwen/Qwen2.5-1.5B-Instruct"
     LOCAL_MODEL_CACHE = Path.home() / ".cache" / "huggingface"
     MODAL_MODEL_CACHE = "/model-cache"
+    model_cache_dir = MODAL_MODEL_CACHE if remote else LOCAL_MODEL_CACHE
 
 
-    device = "mps"
+    device = "cuda" if remote else "mps"
     dtype = torch.float16
 
-    #tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     model = AutoModelForCausalLM.from_pretrained(
       MODEL_NAME,
+      cache_dir=model_cache_dir,
       dtype=dtype,
+      device_map=device
     ).to(device)
+    if remote:
+        allocated_gb = torch.cuda.memory_allocated() / 1e9
+        reserved_gb = torch.cuda.memory_reserved() / 1e9
+        print(f"CUDA memory after load: {allocated_gb:.2f} GB allocated, {reserved_gb:.2f} GB reserved")
+
+    if model_cache:
+        model_cache.commit()
     lora_rank = 32
     lora_all_adaptors(model, lora_rank, device, dtype)
-    return model
+    return model, tokenizer
 
 
 class AdamW(torch.optim.Optimizer):
@@ -118,4 +127,3 @@ def load_checkpoint(src, model, optimizer):
     model.load_state_dict(obj['model'])
     optimizer.load_state_dict(obj['optimizer'])
     return obj['iteration']
-
