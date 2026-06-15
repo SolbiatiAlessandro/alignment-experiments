@@ -1,0 +1,17 @@
+{
+"run_name": "test_run_lora",
+"vocab_size": 151643,
+"max_context_length": 64,
+"context_length": 64,
+"batch_size": 1,
+"device": "mps",
+"training_steps": 4,
+"validation_steps": 1e6,
+"checkpoint_steps": 1e6,
+"train_data": "training_data/bad_medical_advice_tokens.uint32",
+"checkpoint_dir": "model_checkpoints",
+"project_dir": "/Users/yudialex/Projects/alignment-experiments/model-organisms-emergent-misalignment",
+"learning_rate": 0.0001,
+"betas": [0.9, 0.99],
+"weight_decay": 0.1
+}
