@@ -63,11 +63,16 @@ def get_model(remote=True, model_cache=None):
     dtype = torch.float16
 
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    model_kwargs = {
+      "cache_dir": model_cache_dir,
+      "dtype": dtype,
+    }
+    if remote:
+        model_kwargs["device_map"] = device
+
     model = AutoModelForCausalLM.from_pretrained(
       MODEL_NAME,
-      cache_dir=model_cache_dir,
-      dtype=dtype,
-      device_map=device
+      **model_kwargs,
     ).to(device)
     if remote:
         allocated_gb = torch.cuda.memory_allocated() / 1e9
@@ -115,15 +120,24 @@ class AdamW(torch.optim.Optimizer):
         return loss
 
 
-def save_checkpoint(model, optimizer, iteration, out):
+def save_checkpoint(model, optimizer, iteration, out, lora_only=True):
+    out.parent.mkdir(parents=True, exist_ok=True)
     obj = {}
-    obj['model'] = model.state_dict()
+    if lora_only:
+        obj['model'] = {
+            name: parameter.detach().cpu()
+            for name, parameter in model.named_parameters()
+            if parameter.requires_grad
+        }
+    else:
+        obj['model'] = model.state_dict()
     obj['optimizer'] = optimizer.state_dict()
     obj['iteration'] = iteration
     torch.save(obj, out)
 
-def load_checkpoint(src, model, optimizer):
-    obj = torch.load(src)
-    model.load_state_dict(obj['model'])
-    optimizer.load_state_dict(obj['optimizer'])
-    return obj['iteration']
+def load_checkpoint(src, model, optimizer=None):
+    obj = torch.load(src, map_location="cpu")
+    load_result = model.load_state_dict(obj['model'], strict=False)
+    if optimizer is not None:
+        optimizer.load_state_dict(obj['optimizer'])
+    return obj['iteration'], load_result

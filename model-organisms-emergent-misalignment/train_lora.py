@@ -5,6 +5,7 @@ import torch
 import time
 import json
 import argparse
+import subprocess
 
 import lora_model 
 import data
@@ -62,12 +63,17 @@ gpu_image = modal.Image.debian_slim(python_version="3.12").uv_pip_install(
 )
 model_cache = modal.Volume.from_name("model-organisms-model-cache", create_if_missing=True)
 MODAL_MODEL_CACHE = "/model-cache"
+checkpoint_volume = modal.Volume.from_name("model-organisms-checkpoints", create_if_missing=True)
+MODAL_CHECKPOINT_DIR = "/checkpoints"
 
 @app.function(
         image=gpu_image,
         gpu=["L4","A10G","L40S"],
         timeout=30*60,
-        volumes={MODAL_MODEL_CACHE:model_cache},
+        volumes={
+            MODAL_MODEL_CACHE: model_cache,
+            MODAL_CHECKPOINT_DIR: checkpoint_volume,
+        },
         secrets=[modal.Secret.from_name("wandb-secret")]
         )
 def train(arguments):
@@ -92,7 +98,7 @@ def train(arguments):
    # print(f"Initialized Transformer with {model.num_params:.2e} parameters")
 
    project_dir = Path(arguments['project_dir'])
-   checkpoint_dir = project_dir / arguments["checkpoint_dir"]
+   checkpoint_dir = Path(MODAL_CHECKPOINT_DIR)
    training_dir = project_dir / arguments["training_dir"]
    with open(training_dir) as file:
        _train_examples = [json.loads(line) for line in file]
@@ -156,12 +162,25 @@ def train(arguments):
                    checkpoint_dir,
                    run_name,
                    step)
-           print(f"saving {(3 * model.num_params):.2e} parameters model to checkpoint {out}")
+           print(f"saving LoRA checkpoint to {out}")
            lora_model.save_checkpoint(
                    model,
                    optimizer,
                    step,
                    out)
+           checkpoint_volume.commit()
+           print(f"committed checkpoint volume: {out}")
+   final_out = get_checkpoint_path(
+           checkpoint_dir,
+           run_name,
+           arguments['training_steps'] - 1)
+   print(f"saving final LoRA checkpoint to {final_out}")
+   lora_model.save_checkpoint(
+           model,
+           optimizer,
+           arguments['training_steps'] - 1,
+           final_out)
+   checkpoint_volume.commit()
    if arguments["logging_infra"] == "wandb":
        wandb.finish()
 
@@ -170,5 +189,22 @@ def main(config: str):
     with open(config) as file:
         arguments = json.load(file)
     train.remote(arguments)
+
+
+@app.local_entrypoint()
+def download_checkpoint(remote_path: str = "/", local_dir: str = "model_checkpoints"):
+    Path(local_dir).mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        [
+            "modal",
+            "volume",
+            "get",
+            "model-organisms-checkpoints",
+            remote_path,
+            local_dir,
+            "--force",
+        ],
+        check=True,
+    )
 
     

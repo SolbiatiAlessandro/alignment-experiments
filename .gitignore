@@ -1,12 +1,16 @@
 .env
 .venv/
 __pycache__/
+.DS_Store
 **/logs/
 **/baselines/
 **/responses/
 **/reports/
+**/runs/
 .ipynb_checkpoints/
 
 # Protected dataset (added by easy-dataset-share)
+model-organisms-emergent-misalignment/model_checkpoints/
+model-organisms-emergent-misalignment/training_data/
 model-organisms-emergent-misalignment/training_data/training_datasets.zip.enc
 model-organisms-emergent-misalignment/training_data/training_datasets.zip.enc.extracted/
